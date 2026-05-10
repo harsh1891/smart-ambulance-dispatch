@@ -2,6 +2,7 @@ const http = require("http");
 const path = require("path");
 const crypto = require("crypto");
 const { hospitals, ambulances } = require("./data/seed");
+const { loadPersistedState, savePersistedState } = require("./data/store");
 const { readBody, sendJson, serveStatic } = require("./utils/http");
 const { distanceKm, scoreDispatch } = require("./services/dispatch");
 const { getFirstAid } = require("./services/firstAid");
@@ -10,12 +11,15 @@ const portArgIndex = process.argv.indexOf("--port");
 const cliPort = portArgIndex >= 0 ? process.argv[portArgIndex + 1] : null;
 const PORT = Number(cliPort || process.env.PORT || 4173);
 const frontendDir = path.join(__dirname, "..", "frontend");
+const persistedState = loadPersistedState();
 
 const state = {
-  users: [],
-  ambulances: ambulances.map((ambulance) => ({ ...ambulance })),
+  users: persistedState.users,
+  ambulances: persistedState.ambulances.length
+    ? persistedState.ambulances
+    : ambulances.map((ambulance) => ({ ...ambulance })),
   hospitals,
-  emergencies: [],
+  emergencies: persistedState.emergencies,
   driverStreams: new Map(),
   patientStreams: new Map()
 };
@@ -66,6 +70,10 @@ function emergencyView(emergency) {
     ...emergency,
     firstAid: getFirstAid(emergency.incidentType)
   };
+}
+
+function saveState() {
+  savePersistedState(state);
 }
 
 function hospitalsForPatient(patientLocation) {
@@ -145,6 +153,7 @@ async function routeApi(req, res) {
         });
       }
 
+      saveState();
       return sendJson(res, 201, { user: publicUser(user) });
     }
 
@@ -155,6 +164,7 @@ async function routeApi(req, res) {
       );
       if (!user) return sendJson(res, 401, { error: "Invalid phone or password." });
       user.token = id("token");
+      saveState();
       return sendJson(res, 200, { user: publicUser(user) });
     }
 
@@ -191,6 +201,7 @@ async function routeApi(req, res) {
       if (body.location && Number.isFinite(body.location.lat) && Number.isFinite(body.location.lng)) {
         ambulance.location = body.location;
       }
+      saveState();
       return sendJson(res, 200, { ambulance });
     }
 
@@ -210,6 +221,19 @@ async function routeApi(req, res) {
 
       const incidentType = String(body.incidentType || "accident");
       const hospitalPool = hospitalsForPatient(patientLocation);
+      if (!state.ambulances.length) {
+        return sendJson(res, 409, {
+          error:
+            "No ambulance driver has signed up yet. Ask a driver to create a driver account, use GPS, and update status."
+        });
+      }
+      if (!state.ambulances.some((ambulance) => ambulance.available)) {
+        return sendJson(res, 409, {
+          error:
+            "No ambulance is available right now. A driver must keep the driver app open and set status to available."
+        });
+      }
+
       const dispatch = scoreDispatch({
         patientLocation,
         incidentType,
@@ -244,6 +268,7 @@ async function routeApi(req, res) {
 
       state.emergencies.unshift(emergency);
       assignment.ambulance.available = false;
+      saveState();
 
       if (assignment.ambulance.userId) {
         notifyDriver(assignment.ambulance.userId, "emergency", {
@@ -296,6 +321,7 @@ async function routeApi(req, res) {
       if (action === "accept") {
         emergency.status = "accepted";
         emergency.acceptedAt = new Date().toISOString();
+        saveState();
         notifyPatient(emergency.patientId, "status", {
           emergency: emergencyView(emergency),
           ambulance,
@@ -310,6 +336,7 @@ async function routeApi(req, res) {
 
       emergency.status = "rejected";
       ambulance.available = true;
+      saveState();
       notifyPatient(emergency.patientId, "status", {
         emergency: emergencyView(emergency),
         ambulance,
@@ -338,6 +365,7 @@ async function routeApi(req, res) {
 
       emergency.status = "completed";
       ambulance.available = true;
+      saveState();
       notifyPatient(emergency.patientId, "status", {
         emergency: emergencyView(emergency),
         ambulance,

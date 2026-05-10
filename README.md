@@ -60,6 +60,23 @@ Recommended flow:
 
 If the map looks broken after code changes, press `Ctrl + Shift + R` once to hard refresh the browser.
 
+## Install Like An App
+
+This project is a PWA, so Chrome can install it like an app.
+
+On desktop:
+
+1. Open `http://localhost:4180`
+2. Click the browser install icon in the address bar, or click **Install app** if Chrome shows the button.
+
+On Android:
+
+1. Deploy the app to an HTTPS URL.
+2. Open the URL in Chrome.
+3. Tap browser menu -> **Add to Home screen** or **Install app**.
+
+Important: GPS works reliably on `localhost` during development. For a normal person to use it from their own phone, the app must be deployed on HTTPS. A phone opening your computer's local IP over plain HTTP may not allow location permission.
+
 ## Demo Accounts
 
 Create two accounts from the sign-up screen:
@@ -70,6 +87,24 @@ Create two accounts from the sign-up screen:
 The app does not create fake ambulance drivers. A driver appears only after signing up as an ambulance driver.
 
 For the best demo, login as the driver first, click **Use ambulance GPS**, then **Update status**. After that, login as a patient, click **Use my location**, and send an emergency request.
+
+Accounts, drivers, and recent emergencies are saved locally in:
+
+```text
+backend/data/database.json
+```
+
+## Real-World Use Requirements
+
+For a real public app, you need:
+
+- Hosted backend with HTTPS
+- Database such as MongoDB, PostgreSQL, Firebase, or Supabase
+- Real driver onboarding and verification
+- Push notifications for background alerts
+- Medical/legal review of first-aid guidance
+
+This repository is a working college/project prototype that can be expanded into that production setup.
 
 ## Free Tech Stack
 
@@ -89,6 +124,7 @@ frontend/
 
 backend/
   server.js
+  data/store.js
   data/seed.js
   services/dispatch.js
   services/firstAid.js

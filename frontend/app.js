@@ -7,7 +7,9 @@ const app = {
   layers: [],
   activeEmergency: null,
   activeHospital: null,
-  activeAmbulance: null
+  activeAmbulance: null,
+  deferredInstallPrompt: null,
+  mapObserver: null
 };
 
 app.storageKey = `sad_token_${app.sessionName}`;
@@ -51,6 +53,10 @@ function initMap() {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(app.map);
+  if (window.ResizeObserver && !app.mapObserver) {
+    app.mapObserver = new ResizeObserver(() => refreshMapLayout());
+    app.mapObserver.observe($("#map"));
+  }
   refreshMapLayout();
 }
 
@@ -205,6 +211,22 @@ function renderPatientAssignment(payload) {
     ambulance: app.activeAmbulance,
     hospital: app.activeHospital
   });
+}
+
+function renderNoAmbulance(message) {
+  $("#patientAssignment").classList.remove("empty-state");
+  $("#patientAssignment").innerHTML = `
+    <article class="mini-card alert-card">
+      <h3>No ambulance online</h3>
+      <p>${message}</p>
+      <p><strong>How to make it work:</strong> a driver must sign up, keep the driver app open, click Use ambulance GPS, and click Update status.</p>
+      <div class="button-row">
+        <a class="ghost action-link" href="/?session=driver" target="_blank">Open driver app</a>
+        <button class="primary" type="button" id="retryEmergency">Try again</button>
+      </div>
+    </article>
+  `;
+  $("#retryEmergency").addEventListener("click", () => $("#emergencyForm").requestSubmit());
 }
 
 function renderDriverAlert(payload) {
@@ -489,6 +511,9 @@ function setupDashboard() {
       loadSystemData();
     } catch (error) {
       setMessage("#patientMessage", error.message, "error");
+      if (error.message.includes("No ambulance")) {
+        renderNoAmbulance(error.message);
+      }
     }
   });
 
@@ -528,3 +553,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   restoreSession();
 });
+
+window.addEventListener("load", () => {
+  refreshMapLayout();
+});
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  app.deferredInstallPrompt = event;
+  $("#installBtn")?.classList.remove("hidden");
+});
+
+$("#installBtn")?.addEventListener("click", async () => {
+  if (!app.deferredInstallPrompt) return;
+  app.deferredInstallPrompt.prompt();
+  await app.deferredInstallPrompt.userChoice;
+  app.deferredInstallPrompt = null;
+  $("#installBtn")?.classList.add("hidden");
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}

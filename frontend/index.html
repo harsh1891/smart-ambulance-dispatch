@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Ambulance Dispatch</title>
+    <meta name="theme-color" content="#0f766e" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -21,6 +24,7 @@
         </div>
         <div class="session-actions">
           <span id="sessionLabel">Not signed in</span>
+          <button id="installBtn" class="ghost hidden">Install app</button>
           <button id="logoutBtn" class="ghost hidden">Logout</button>
         </div>
       </section>
