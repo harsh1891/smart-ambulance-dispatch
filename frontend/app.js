@@ -144,33 +144,152 @@ async function drawRoute(points, color) {
 }
 
 async function renderMapRoute({ emergency, ambulance, hospital }) {
+
   initMap();
+
   if (!app.map) {
-    $("#routeSummary").textContent = "Map library is still loading. Refresh if it does not appear.";
+    $("#routeSummary").textContent =
+      "Map library is still loading.";
     return;
   }
+
   clearMap();
 
   const patient = emergency.location;
-  marker(patient, "Patient location", "#b42318");
-  marker(ambulance.location, `${ambulance.vehicleNumber} - ${ambulance.driverName}`, "#2563eb");
-  marker(hospital.location, hospital.name, "#0f766e");
+  const driver = ambulance.location;
+  const hospitalLoc = hospital.location;
 
-await drawRoute(
-  [
-    ambulance.location,
+  // MARKERS
+  marker(
     patient,
-    hospital.location
-  ],
-  "#2563eb"
-);
+    "Patient location",
+    "#dc2626"
+  );
+
+  marker(
+    driver,
+    `${ambulance.vehicleNumber} - ${ambulance.driverName}`,
+    "#2563eb"
+  );
+
+  marker(
+    hospitalLoc,
+    hospital.name,
+    "#16a34a"
+  );
+
+  // ========= ROUTE 1 =========
+  // DRIVER -> PATIENT (BLUE)
+
+  try {
+
+    const response1 = await api("/api/route", {
+      method: "POST",
+      body: {
+        driverLat: driver.lat,
+        driverLng: driver.lng,
+
+        patientLat: patient.lat,
+        patientLng: patient.lng,
+
+        hospitalLat: patient.lat,
+        hospitalLng: patient.lng
+      }
+    });
+
+    const points1 = response1.route.map((p) => [
+      p.latitude,
+      p.longitude
+    ]);
+
+    const line1 = L.polyline(points1, {
+      color: "#2563eb",
+      weight: 6,
+      opacity: 0.9
+    }).addTo(app.map);
+
+    app.layers.push(line1);
+
+  } catch (err) {
+
+    console.error("Driver route error:", err);
+
+    const fallback1 = L.polyline(
+      [
+        [driver.lat, driver.lng],
+        [patient.lat, patient.lng]
+      ],
+      {
+        color: "#2563eb",
+        weight: 6,
+        dashArray: "8 8"
+      }
+    ).addTo(app.map);
+
+    app.layers.push(fallback1);
+  }
+
+  // ========= ROUTE 2 =========
+  // PATIENT -> HOSPITAL (GREEN)
+
+  try {
+
+    const response2 = await api("/api/route", {
+      method: "POST",
+      body: {
+        driverLat: patient.lat,
+        driverLng: patient.lng,
+
+        patientLat: hospitalLoc.lat,
+        patientLng: hospitalLoc.lng,
+
+        hospitalLat: hospitalLoc.lat,
+        hospitalLng: hospitalLoc.lng
+      }
+    });
+
+    const points2 = response2.route.map((p) => [
+      p.latitude,
+      p.longitude
+    ]);
+
+    const line2 = L.polyline(points2, {
+      color: "#16a34a",
+      weight: 6,
+      opacity: 0.9
+    }).addTo(app.map);
+
+    app.layers.push(line2);
+
+  } catch (err) {
+
+    console.error("Hospital route error:", err);
+
+    const fallback2 = L.polyline(
+      [
+        [patient.lat, patient.lng],
+        [hospitalLoc.lat, hospitalLoc.lng]
+      ],
+      {
+        color: "#16a34a",
+        weight: 6,
+        dashArray: "8 8"
+      }
+    ).addTo(app.map);
+
+    app.layers.push(fallback2);
+  }
+
+  // FIT MAP
 
   const bounds = L.latLngBounds([
+    [driver.lat, driver.lng],
     [patient.lat, patient.lng],
-    [ambulance.location.lat, ambulance.location.lng],
-    [hospital.location.lat, hospital.location.lng]
+    [hospitalLoc.lat, hospitalLoc.lng]
   ]);
+
   app.map.fitBounds(bounds.pad(0.25));
+
   refreshMapLayout();
 
   $("#routeSummary").textContent =
