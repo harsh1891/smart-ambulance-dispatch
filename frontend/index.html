@@ -3,217 +3,498 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Smart Ambulance Dispatch</title>
+
     <meta name="theme-color" content="#0f766e" />
+
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+
+    <!-- LEAFLET CSS -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIINfQ1uDl9r0aWfSgqGTxWLMQn0wR+3p6Q="
-      crossorigin=""
     />
+
+    <!-- YOUR CSS -->
     <link rel="stylesheet" href="/styles.css" />
   </head>
+
   <body>
     <main class="app-shell">
+
+      <!-- TOPBAR -->
       <section class="topbar">
         <div>
           <p class="eyebrow">Emergency response prototype</p>
           <h1>Smart Ambulance Dispatch</h1>
         </div>
+
         <div class="session-actions">
           <span id="sessionLabel">Not signed in</span>
-          <button id="installBtn" class="ghost hidden">Install app</button>
-          <button id="logoutBtn" class="ghost hidden">Logout</button>
+          <button id="installBtn" class="ghost hidden">
+            Install app
+          </button>
+          <button id="logoutBtn" class="ghost hidden">
+            Logout
+          </button>
         </div>
       </section>
 
+      <!-- AUTH VIEW -->
       <section id="authView" class="auth-layout">
+
         <div class="intro-panel">
           <h2>One app, two roles</h2>
+
           <p>
-            Patients report emergencies. Drivers receive live alerts when they are the best available ambulance.
+            Patients report emergencies. Drivers receive live alerts when
+            they are the best available ambulance.
           </p>
+
           <div class="feature-grid">
+
             <div>
               <strong>Free maps</strong>
               <span>OpenStreetMap and Leaflet</span>
             </div>
+
             <div>
               <strong>Live alerts</strong>
               <span>In-app driver notifications</span>
             </div>
+
             <div>
               <strong>Dispatch logic</strong>
               <span>Nearest ambulance + suitable hospital</span>
             </div>
+
             <div>
               <strong>First aid</strong>
               <span>Incident-specific guidance</span>
             </div>
+
           </div>
         </div>
 
+        <!-- AUTH FORM -->
         <form id="authForm" class="panel auth-card">
-          <div class="tabs" role="tablist" aria-label="Authentication mode">
-            <button type="button" class="tab active" data-mode="signup">Sign up</button>
-            <button type="button" class="tab" data-mode="login">Login</button>
+
+          <div class="tabs">
+            <button
+              type="button"
+              class="tab active"
+              data-mode="signup"
+            >
+              Sign up
+            </button>
+
+            <button
+              type="button"
+              class="tab"
+              data-mode="login"
+            >
+              Login
+            </button>
           </div>
+
           <label id="nameField">
             Full name
-            <input name="name" placeholder="Enter your name" autocomplete="name" />
+            <input
+              name="name"
+              placeholder="Enter your name"
+            />
           </label>
+
           <label>
             Phone number
-            <input name="phone" placeholder="+91 98765 43210" autocomplete="tel" required />
+            <input
+              name="phone"
+              placeholder="+91 98765 43210"
+              required
+            />
           </label>
+
           <label>
             Password
-            <input name="password" type="password" placeholder="Create password" required />
+            <input
+              name="password"
+              type="password"
+              placeholder="Create password"
+              required
+            />
           </label>
+
           <label id="vehicleField" class="hidden">
             Ambulance vehicle number
-            <input name="vehicleNumber" placeholder="MH 12 ER 108" />
+            <input
+              name="vehicleNumber"
+              placeholder="MH 12 ER 108"
+            />
           </label>
+
           <fieldset id="roleField">
+
             <legend>Choose account type</legend>
+
             <label class="choice">
-              <input type="radio" name="role" value="patient" checked />
+              <input
+                type="radio"
+                name="role"
+                value="patient"
+                checked
+              />
               Patient / normal user
             </label>
+
             <label class="choice">
-              <input type="radio" name="role" value="driver" />
+              <input
+                type="radio"
+                name="role"
+                value="driver"
+              />
               Ambulance driver
             </label>
+
           </fieldset>
-          <button class="primary" type="submit" id="authSubmit">Create account</button>
+
+          <button
+            class="primary"
+            type="submit"
+            id="authSubmit"
+          >
+            Create account
+          </button>
+
           <p id="authMessage" class="message"></p>
+
           <div class="demo-links">
+
             <strong>Demo in two tabs</strong>
-            <a href="/?session=driver" target="_blank">Open driver session</a>
-            <a href="/?session=patient" target="_blank">Open patient session</a>
+
+            <a
+              href="/?session=driver"
+              target="_blank"
+            >
+              Open driver session
+            </a>
+
+            <a
+              href="/?session=patient"
+              target="_blank"
+            >
+              Open patient session
+            </a>
+
           </div>
+
         </form>
       </section>
 
+      <!-- DASHBOARD -->
       <section id="dashboardView" class="dashboard hidden">
+
+        <!-- SIDEBAR -->
         <aside class="panel sidebar">
-          <div id="roleBadge" class="role-badge">Dashboard</div>
+
+          <div id="roleBadge" class="role-badge">
+            Dashboard
+          </div>
+
           <nav class="nav">
-            <button class="nav-item active" data-view="patientPanel">Patient</button>
-            <button class="nav-item" data-view="driverPanel">Driver</button>
+            <button
+              class="nav-item active"
+              data-view="patientPanel"
+            >
+              Patient
+            </button>
+
+            <button
+              class="nav-item"
+              data-view="driverPanel"
+            >
+              Driver
+            </button>
           </nav>
+
           <div class="status-box">
             <span>Live connection</span>
-            <strong id="connectionStatus">Connecting...</strong>
+            <strong id="connectionStatus">
+              Connecting...
+            </strong>
           </div>
+
         </aside>
 
+        <!-- WORKSPACE -->
         <section class="workspace">
+
+          <!-- PATIENT PANEL -->
           <div id="patientPanel" class="view-panel">
+
             <div class="content-grid">
+
+              <!-- EMERGENCY FORM -->
               <form id="emergencyForm" class="panel form-panel">
+
                 <h2>Report emergency</h2>
+
                 <label>
                   Incident type
+
                   <select name="incidentType">
-                    <option value="accident">Road accident</option>
-                    <option value="bleeding">Heavy bleeding</option>
-                    <option value="heart_attack">Heart attack symptoms</option>
-                    <option value="breathing">Breathing difficulty</option>
-                    <option value="stroke">Stroke symptoms</option>
-                    <option value="burn">Burn injury</option>
-                    <option value="fracture">Possible fracture</option>
+
+                    <option value="accident">
+                      Road accident
+                    </option>
+
+                    <option value="bleeding">
+                      Heavy bleeding
+                    </option>
+
+                    <option value="heart_attack">
+                      Heart attack symptoms
+                    </option>
+
+                    <option value="breathing">
+                      Breathing difficulty
+                    </option>
+
+                    <option value="stroke">
+                      Stroke symptoms
+                    </option>
+
+                    <option value="burn">
+                      Burn injury
+                    </option>
+
+                    <option value="fracture">
+                      Possible fracture
+                    </option>
+
                   </select>
                 </label>
+
                 <label>
                   Incident details
-                  <textarea name="description" rows="4" placeholder="Describe what happened"></textarea>
+
+                  <textarea
+                    name="description"
+                    rows="4"
+                    placeholder="Describe what happened"
+                  ></textarea>
+
                 </label>
+
                 <div class="two-cols">
+
                   <label>
                     Latitude
-                    <input name="lat" type="number" step="0.000001" value="28.6142" required />
+
+                    <input
+                      name="lat"
+                      type="number"
+                      step="0.000001"
+                      value="28.6142"
+                      required
+                    />
                   </label>
+
                   <label>
                     Longitude
-                    <input name="lng" type="number" step="0.000001" value="77.2098" required />
+
+                    <input
+                      name="lng"
+                      type="number"
+                      step="0.000001"
+                      value="77.2098"
+                      required
+                    />
                   </label>
+
                 </div>
+
                 <div class="button-row">
-                  <button type="button" class="ghost" id="useLocationBtn">Use my location</button>
-                  <button type="submit" class="primary">Send emergency</button>
+
+                  <button
+                    type="button"
+                    class="ghost"
+                    id="useLocationBtn"
+                  >
+                    Use my location
+                  </button>
+
+                  <button
+                    type="submit"
+                    class="primary"
+                  >
+                    Send emergency
+                  </button>
+
                 </div>
-                <p class="message" id="patientMessage"></p>
+
+                <p
+                  class="message"
+                  id="patientMessage"
+                ></p>
+
               </form>
 
+              <!-- ASSIGNED RESPONSE -->
               <div class="panel">
+
                 <h2>Assigned response</h2>
-                <div id="patientAssignment" class="empty-state">No emergency submitted yet.</div>
+
+                <div
+                  id="patientAssignment"
+                  class="empty-state"
+                >
+                  No emergency submitted yet.
+                </div>
+
               </div>
+
             </div>
 
+            <!-- FIRST AID -->
             <div class="panel guidance-panel">
+
               <h2>Precaution guidance</h2>
-              <div id="firstAidBox" class="empty-state">Guidance appears after selecting or submitting an incident.</div>
+
+              <div
+                id="firstAidBox"
+                class="empty-state"
+              >
+                Guidance appears after selecting or submitting an incident.
+              </div>
+
             </div>
+
           </div>
 
+          <!-- DRIVER PANEL -->
           <div id="driverPanel" class="view-panel hidden">
+
             <div class="content-grid">
+
+              <!-- DRIVER STATUS -->
               <div class="panel form-panel">
+
                 <h2>Driver availability</h2>
+
                 <label class="switch-row">
-                  <input type="checkbox" id="availableToggle" checked />
+
+                  <input
+                    type="checkbox"
+                    id="availableToggle"
+                    checked
+                  />
+
                   Available for emergency dispatch
+
                 </label>
+
                 <div class="two-cols">
+
                   <label>
                     Ambulance latitude
-                    <input id="driverLat" type="number" step="0.000001" value="28.6175" />
+
+                    <input
+                      id="driverLat"
+                      type="number"
+                      step="0.000001"
+                      value="28.6175"
+                    />
                   </label>
+
                   <label>
                     Ambulance longitude
-                    <input id="driverLng" type="number" step="0.000001" value="77.2131" />
+
+                    <input
+                      id="driverLng"
+                      type="number"
+                      step="0.000001"
+                      value="77.2131"
+                    />
                   </label>
+
                 </div>
-                <button id="saveDriverStatus" class="primary" type="button">Update status</button>
-                <button id="useDriverLocationBtn" class="ghost" type="button">Use ambulance GPS</button>
+
+                <button
+                  id="saveDriverStatus"
+                  class="primary"
+                  type="button"
+                >
+                  Update status
+                </button>
+
+                <button
+                  id="useDriverLocationBtn"
+                  class="ghost"
+                  type="button"
+                >
+                  Use ambulance GPS
+                </button>
+
                 <p id="driverMessage" class="message"></p>
+
               </div>
 
+              <!-- ALERT PANEL -->
               <div class="panel alert-panel">
+
                 <h2>Incoming emergency</h2>
-                <div id="driverAlert" class="empty-state">No active alert yet. Keep this dashboard open.</div>
+
+                <div
+                  id="driverAlert"
+                  class="empty-state"
+                >
+                  No active alert yet. Keep this dashboard open.
+                </div>
+
               </div>
+
             </div>
+
+            <!-- HOSPITALS -->
             <div class="panel">
-                <h2>Hospitals</h2>
-                <div id="hospitalList" class="list"></div>
+
+              <h2>Hospitals</h2>
+
+              <div id="hospitalList" class="list"></div>
+
             </div>
+
           </div>
 
+          <!-- MAP -->
           <div class="panel map-panel">
+
             <div class="map-header">
+
               <h2>OpenStreetMap route view</h2>
-              <span id="routeSummary">Waiting for route</span>
+
+              <span id="routeSummary">
+                Waiting for route
+              </span>
+
             </div>
+
             <div id="map"></div>
+
           </div>
+
         </section>
       </section>
+
     </main>
 
-    <template id="cardTemplate">
-      <article class="mini-card"></article>
-    </template>
+    <!-- LEAFLET JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
+    <!-- YOUR APP JS -->
     <script src="/app.js"></script>
+
   </body>
 </html>
