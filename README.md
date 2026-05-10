@@ -31,34 +31,15 @@ Open:
 http://localhost:4173
 ```
 
-## How To Demo Patient + Driver
+## 🚀 Live Demo
 
-Use two separate demo sessions. They behave like two different phones because each URL keeps its own login.
+Link : https://smart-ambulance-dispatch.onrender.com
 
-Driver tab:
+The app is designed to be role-aware. Users can choose their role during the sign-up process:
 
-```text
-http://localhost:4180/?session=driver
-```
+Register: Create an account and select either "Patient" or "Ambulance Driver".
 
-Patient tab:
-
-```text
-http://localhost:4180/?session=patient
-```
-
-Recommended flow:
-
-1. Open the driver tab and sign up as **Ambulance Driver**.
-2. Click **Use ambulance GPS** and allow browser location permission.
-3. Click **Update status**.
-4. Open the patient tab and sign up as **Patient / normal user**.
-5. Click **Use my location** and allow location permission.
-6. Select incident type and click **Send emergency**.
-7. Go back to the driver tab, accept the alert.
-8. Patient tab will then show the assigned ambulance driver details.
-
-If the map looks broken after code changes, press `Ctrl + Shift + R` once to hard refresh the browser.
+Role Persistence: The app will remember your selection and automatically show you the correct dashboard (Map & Dispatch for drivers, Emergency Request for patients) every time you return.
 
 ## Install Like An App
 
@@ -66,45 +47,17 @@ This project is a PWA, so Chrome can install it like an app.
 
 On desktop:
 
-1. Open `http://localhost:4180`
+1. Open `https://smart-ambulance-dispatch.onrender.com/`
 2. Click the browser install icon in the address bar, or click **Install app** if Chrome shows the button.
 
 On Android:
 
-1. Deploy the app to an HTTPS URL.
-2. Open the URL in Chrome.
-3. Tap browser menu -> **Add to Home screen** or **Install app**.
+1. Open https://smart-ambulance-dispatch.onrender.com/ in Chrome on your phone..
+2. Tap browser menu -> **Add to Home screen** or **Install app**.
 
-Important: GPS works reliably on `localhost` during development. For a normal person to use it from their own phone, the app must be deployed on HTTPS. A phone opening your computer's local IP over plain HTTP may not allow location permission.
+Important: Since the app is deployed on HTTPS via Render, Geolocation and GPS features will work correctly on all mobile devices and browsers.
 
-## Demo Accounts
 
-Create two accounts from the sign-up screen:
-
-1. Ambulance driver account
-2. Patient / normal user account
-
-The app does not create fake ambulance drivers. A driver appears only after signing up as an ambulance driver.
-
-For the best demo, login as the driver first, click **Use ambulance GPS**, then **Update status**. After that, login as a patient, click **Use my location**, and send an emergency request.
-
-Accounts, drivers, and recent emergencies are saved locally in:
-
-```text
-backend/data/database.json
-```
-
-## Real-World Use Requirements
-
-For a real public app, you need:
-
-- Hosted backend with HTTPS
-- Database such as MongoDB, PostgreSQL, Firebase, or Supabase
-- Real driver onboarding and verification
-- Push notifications for background alerts
-- Medical/legal review of first-aid guidance
-
-This repository is a working college/project prototype that can be expanded into that production setup.
 
 ## Free Tech Stack
 
@@ -134,10 +87,3 @@ backend/
   utils/http.js
 ```
 
-## Important Note
-
-This is a college/project prototype, not a medical device. First-aid guidance is educational and should always recommend calling local emergency services immediately.
-
-## Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md). The repo includes `render.yaml` for a free HTTPS Node web service deployment.
