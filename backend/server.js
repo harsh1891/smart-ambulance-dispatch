@@ -382,6 +382,73 @@ async function routeApi(req, res) {
       });
     }
 
+    if (method === "POST" && url.pathname === "/api/route") {
+
+  const body = await readBody(req);
+
+  const {
+    driverLat,
+    driverLng,
+    patientLat,
+    patientLng,
+    hospitalLat,
+    hospitalLng
+  } = body;
+
+  if (
+    !Number.isFinite(driverLat) ||
+    !Number.isFinite(driverLng) ||
+    !Number.isFinite(patientLat) ||
+    !Number.isFinite(patientLng) ||
+    !Number.isFinite(hospitalLat) ||
+    !Number.isFinite(hospitalLng)
+  ) {
+    return sendJson(res, 400, {
+      error: "Valid coordinates required"
+    });
+  }
+
+  const orsResponse = await fetch(
+    "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+    {
+      method: "POST",
+      headers: {
+        Authorization: process.env.ORS_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        coordinates: [
+          [driverLng, driverLat],
+          [patientLng, patientLat],
+          [hospitalLng, hospitalLat]
+        ]
+      })
+    }
+  );
+
+  const routeData = await orsResponse.json();
+
+  if (routeData.error) {
+    return sendJson(res, 500, {
+      error: routeData.error.message || "Route generation failed"
+    });
+  }
+
+  const coordinates =
+    routeData.features?.[0]?.geometry?.coordinates || [];
+
+  const formattedCoordinates = coordinates.map(([lng, lat]) => ({
+    latitude: lat,
+    longitude: lng
+  }));
+
+  return sendJson(res, 200, {
+    success: true,
+    route: formattedCoordinates,
+    raw: routeData
+  });
+}
+
     if (method === "GET" && url.pathname === "/api/events") {
       const user = requireUser(req, res);
       if (!user) return;
