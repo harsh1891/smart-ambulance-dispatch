@@ -111,6 +111,7 @@ This repository is a working college/project prototype that can be expanded into
 - Backend: Node.js built-in HTTP server
 - Frontend: HTML, CSS, JavaScript
 - Maps: OpenStreetMap tiles with Leaflet
+- Real nearby hospital lookup: OpenStreetMap Overpass API, with fallback data
 - Routing: OSRM public route API when available, with local fallback
 - Notifications: Server-Sent Events for live in-app driver alerts
 
@@ -126,6 +127,7 @@ backend/
   server.js
   data/store.js
   data/seed.js
+  services/osmHospitals.js
   services/dispatch.js
   services/firstAid.js
   services/dispatch.test.js
@@ -135,3 +137,7 @@ backend/
 ## Important Note
 
 This is a college/project prototype, not a medical device. First-aid guidance is educational and should always recommend calling local emergency services immediately.
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md). The repo includes `render.yaml` for a free HTTPS Node web service deployment.

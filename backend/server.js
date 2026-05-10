@@ -6,6 +6,7 @@ const { loadPersistedState, savePersistedState } = require("./data/store");
 const { readBody, sendJson, serveStatic } = require("./utils/http");
 const { distanceKm, scoreDispatch } = require("./services/dispatch");
 const { getFirstAid } = require("./services/firstAid");
+const { findNearbyHospitals } = require("./services/osmHospitals");
 
 const portArgIndex = process.argv.indexOf("--port");
 const cliPort = portArgIndex >= 0 ? process.argv[portArgIndex + 1] : null;
@@ -76,7 +77,10 @@ function saveState() {
   savePersistedState(state);
 }
 
-function hospitalsForPatient(patientLocation) {
+async function hospitalsForPatient(patientLocation) {
+  const osmHospitals = await findNearbyHospitals(patientLocation);
+  if (osmHospitals.length) return osmHospitals;
+
   const nearestSeedDistance = Math.min(
     ...state.hospitals.map((hospital) => distanceKm(hospital.location, patientLocation))
   );
@@ -179,7 +183,7 @@ async function routeApi(req, res) {
       const lat = Number(url.searchParams.get("lat"));
       const lng = Number(url.searchParams.get("lng"));
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        return sendJson(res, 200, { hospitals: hospitalsForPatient({ lat, lng }) });
+        return sendJson(res, 200, { hospitals: await hospitalsForPatient({ lat, lng }) });
       }
       return sendJson(res, 200, { hospitals: state.hospitals });
     }
@@ -220,7 +224,7 @@ async function routeApi(req, res) {
       }
 
       const incidentType = String(body.incidentType || "accident");
-      const hospitalPool = hospitalsForPatient(patientLocation);
+      const hospitalPool = await hospitalsForPatient(patientLocation);
       if (!state.ambulances.length) {
         return sendJson(res, 409, {
           error:

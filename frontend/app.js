@@ -183,13 +183,14 @@ function renderFirstAid(firstAid) {
 
 function assignmentHtml({ emergency, ambulance, hospital }) {
   const accepted = emergency.status === "accepted";
+  const hospitalSource = hospital.source ? ` via ${hospital.source}` : "";
   return `
     <article class="mini-card">
       <h3>${accepted ? "Ambulance accepted" : "Waiting for driver response"}</h3>
       <p><strong>Status:</strong> ${emergency.status.replaceAll("_", " ")}</p>
       <p><strong>Ambulance:</strong> ${ambulance.vehicleNumber}</p>
       <p><strong>Driver:</strong> ${accepted ? `${ambulance.driverName} (${ambulance.driverPhone})` : "Hidden until driver accepts"}</p>
-      <p><strong>Hospital:</strong> ${hospital.name} (${hospital.phone})</p>
+      <p><strong>Hospital:</strong> ${hospital.name} (${hospital.phone})${hospitalSource}</p>
       <p><strong>ETA:</strong> ${emergency.routePlan.etaToPatientMinutes} min to patient, ${emergency.routePlan.etaToHospitalMinutes} min to hospital</p>
     </article>
   `;
@@ -242,7 +243,7 @@ function renderDriverAlert(payload) {
       <p><strong>Patient:</strong> ${emergency.patientName} (${emergency.patientPhone})</p>
       <p><strong>Details:</strong> ${emergency.description || "No extra details"}</p>
       <p><strong>ETA:</strong> ${emergency.routePlan.etaToPatientMinutes} min to patient, ${emergency.routePlan.etaToHospitalMinutes} min to hospital</p>
-      <p><strong>Hospital:</strong> ${payload.hospital.name}</p>
+      <p><strong>Hospital:</strong> ${payload.hospital.name}${payload.hospital.source ? ` via ${payload.hospital.source}` : ""}</p>
       <div class="button-row">
         <button class="primary" type="button" id="acceptEmergency">Accept</button>
         <button class="ghost" type="button" id="rejectEmergency">Reject</button>
@@ -300,7 +301,8 @@ async function loadSystemData() {
       (hospital) => `
         <article class="mini-card">
           <h3>${hospital.name}</h3>
-          <p>${hospital.phone}</p>
+          <p>${hospital.phone}${hospital.distanceKm ? ` - ${hospital.distanceKm} km away` : ""}</p>
+          ${hospital.source ? `<p><strong>Source:</strong> ${hospital.source}</p>` : ""}
           <div class="pill-row">${hospital.specialties.map((item) => `<span class="pill">${item}</span>`).join("")}</div>
         </article>
       `
