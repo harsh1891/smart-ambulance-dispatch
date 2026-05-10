@@ -1,0 +1,23 @@
+{
+  "name": "smart-ambulance-dispatch",
+  "version": "1.0.0",
+  "description": "Free OpenStreetMap-based smart ambulance dispatch prototype with patient and driver dashboards.",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "test": "node backend/services/dispatch.test.js"
+  },
+  "keywords": [
+    "ambulance",
+    "emergency",
+    "dispatch",
+    "openstreetmap",
+    "leaflet"
+  ],
+  "author": "Harsh",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
