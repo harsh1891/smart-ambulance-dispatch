@@ -87,6 +87,10 @@ async function drawRoute(points, color) {
 
 async function renderMapRoute({ emergency, ambulance, hospital }) {
   initMap();
+  if (!app.map) {
+    $("#routeSummary").textContent = "Map library is still loading. Refresh if it does not appear.";
+    return;
+  }
   clearMap();
 
   const patient = emergency.location;
@@ -128,11 +132,15 @@ function showDashboard() {
   if (app.user.role === "patient") {
     patientNav.click();
     patientNav.disabled = false;
+    patientNav.classList.remove("hidden");
     driverNav.disabled = true;
+    driverNav.classList.add("hidden");
   } else {
     driverNav.click();
     patientNav.disabled = true;
+    patientNav.classList.add("hidden");
     driverNav.disabled = false;
+    driverNav.classList.remove("hidden");
   }
 
   initMap();
@@ -241,12 +249,13 @@ async function completeEmergency() {
 }
 
 async function loadSystemData() {
-  const [{ hospitals }, { ambulances }] = await Promise.all([
-    api("/api/hospitals"),
-    api("/api/ambulances")
-  ]);
+  const lat = Number($("#driverLat")?.value);
+  const lng = Number($("#driverLng")?.value);
+  const query = Number.isFinite(lat) && Number.isFinite(lng) ? `?lat=${lat}&lng=${lng}` : "";
+  const { hospitals } = await api(`/api/hospitals${query}`);
 
-  $("#hospitalList").innerHTML = hospitals
+  if ($("#hospitalList")) {
+    $("#hospitalList").innerHTML = hospitals
     .map(
       (hospital) => `
         <article class="mini-card">
@@ -257,18 +266,7 @@ async function loadSystemData() {
       `
     )
     .join("");
-
-  $("#ambulanceList").innerHTML = ambulances
-    .map(
-      (ambulance) => `
-        <article class="mini-card">
-          <h3>${ambulance.vehicleNumber}</h3>
-          <p>${ambulance.driverName} - ${ambulance.driverPhone}</p>
-          <p><strong>Status:</strong> ${ambulance.available ? "Available" : "Busy"}</p>
-        </article>
-      `
-    )
-    .join("");
+  }
 }
 
 function connectEvents() {
@@ -320,8 +318,18 @@ function setupAuth() {
       $$(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
       $("#nameField").classList.toggle("hidden", mode === "login");
       $("#roleField").classList.toggle("hidden", mode === "login");
+      $("#vehicleField").classList.toggle(
+        "hidden",
+        mode === "login" || $('[name="role"]:checked')?.value !== "driver"
+      );
       $("#authSubmit").textContent = mode === "signup" ? "Create account" : "Login";
       setMessage("#authMessage", "");
+    });
+  });
+
+  $$('[name="role"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      $("#vehicleField").classList.toggle("hidden", input.value !== "driver" || !input.checked);
     });
   });
 
@@ -335,7 +343,8 @@ function setupAuth() {
           name: form.get("name"),
           phone: form.get("phone"),
           password: form.get("password"),
-          role: form.get("role")
+          role: form.get("role"),
+          vehicleNumber: form.get("vehicleNumber")
         }
       });
       app.user = payload.user;
@@ -379,9 +388,43 @@ function setupDashboard() {
       (position) => {
         $('[name="lat"]').value = position.coords.latitude.toFixed(6);
         $('[name="lng"]').value = position.coords.longitude.toFixed(6);
+        if (app.map) {
+          app.map.setView([position.coords.latitude, position.coords.longitude], 15);
+          clearMap();
+          marker(
+            { lat: position.coords.latitude, lng: position.coords.longitude },
+            "Your current emergency location",
+            "#b42318"
+          );
+        }
         setMessage("#patientMessage", "Location filled from browser GPS.", "success");
       },
       () => setMessage("#patientMessage", "Could not access location. You can enter it manually.", "error")
+    );
+  });
+
+  $("#useDriverLocationBtn").addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      setMessage("#driverMessage", "Geolocation is not supported in this browser.", "error");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        $("#driverLat").value = position.coords.latitude.toFixed(6);
+        $("#driverLng").value = position.coords.longitude.toFixed(6);
+        if (app.map) {
+          app.map.setView([position.coords.latitude, position.coords.longitude], 15);
+          clearMap();
+          marker(
+            { lat: position.coords.latitude, lng: position.coords.longitude },
+            "Your ambulance location",
+            "#2563eb"
+          );
+        }
+        setMessage("#driverMessage", "Ambulance GPS location filled. Click Update status.", "success");
+        loadSystemData();
+      },
+      () => setMessage("#driverMessage", "Could not access location. You can enter it manually.", "error")
     );
   });
 

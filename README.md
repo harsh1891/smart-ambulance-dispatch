@@ -3,7 +3,7 @@
 A free full-stack prototype for emergency ambulance dispatch. One app supports two roles:
 
 - Patient / normal user: report an incident, share location, receive assigned driver details, and see first-aid guidance.
-- Ambulance driver: set availability, receive live emergency alerts, accept or reject requests, and view routes.
+- Ambulance driver: set availability, share GPS location, receive live emergency alerts, accept or reject requests, see hospitals, and view routes.
 
 The app uses OpenStreetMap + Leaflet instead of paid Google Maps APIs. Live alerts are handled with Server-Sent Events while the driver dashboard is open.
 
@@ -33,7 +33,14 @@ http://localhost:4173
 
 ## Demo Accounts
 
-You can create accounts from the sign-up screen. The app also seeds demo hospitals and ambulances automatically.
+Create two accounts from the sign-up screen:
+
+1. Ambulance driver account
+2. Patient / normal user account
+
+The app does not create fake ambulance drivers. A driver appears only after signing up as an ambulance driver.
+
+For the best demo, login as the driver first, click **Use ambulance GPS**, then **Update status**. After that, login as a patient, click **Use my location**, and send an emergency request.
 
 ## Free Tech Stack
 

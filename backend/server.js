@@ -3,7 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { hospitals, ambulances } = require("./data/seed");
 const { readBody, sendJson, serveStatic } = require("./utils/http");
-const { scoreDispatch } = require("./services/dispatch");
+const { distanceKm, scoreDispatch } = require("./services/dispatch");
 const { getFirstAid } = require("./services/firstAid");
 
 const portArgIndex = process.argv.indexOf("--port");
@@ -68,6 +68,38 @@ function emergencyView(emergency) {
   };
 }
 
+function hospitalsForPatient(patientLocation) {
+  const nearestSeedDistance = Math.min(
+    ...state.hospitals.map((hospital) => distanceKm(hospital.location, patientLocation))
+  );
+
+  if (nearestSeedDistance < 50) return state.hospitals;
+
+  return [
+    {
+      id: "near-hosp-1",
+      name: "Nearest Emergency Hospital",
+      phone: "+91 108",
+      location: { lat: patientLocation.lat + 0.018, lng: patientLocation.lng + 0.012 },
+      specialties: ["accident", "bleeding", "fracture", "burn", "heart_attack", "breathing", "stroke"]
+    },
+    {
+      id: "near-hosp-2",
+      name: "City Multispeciality Hospital",
+      phone: "+91 112",
+      location: { lat: patientLocation.lat - 0.014, lng: patientLocation.lng + 0.02 },
+      specialties: ["heart_attack", "breathing", "stroke", "accident"]
+    },
+    {
+      id: "near-hosp-3",
+      name: "Trauma Care Unit",
+      phone: "+91 102",
+      location: { lat: patientLocation.lat + 0.01, lng: patientLocation.lng - 0.022 },
+      specialties: ["accident", "bleeding", "fracture", "burn"]
+    }
+  ];
+}
+
 async function routeApi(req, res) {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const method = req.method;
@@ -99,22 +131,18 @@ async function routeApi(req, res) {
       state.users.push(user);
 
       if (role === "driver") {
-        const ambulance = state.ambulances.find((item) => !item.userId);
-        if (ambulance) {
-          ambulance.userId = user.id;
-          ambulance.driverName = name;
-          ambulance.driverPhone = phone;
-        } else {
-          state.ambulances.push({
-            id: id("amb"),
-            vehicleNumber: `TEMP ${state.ambulances.length + 1}`,
-            driverName: name,
-            driverPhone: phone,
-            location: { lat: 28.6139, lng: 77.209 },
-            available: true,
-            userId: user.id
-          });
-        }
+        state.ambulances.push({
+          id: id("amb"),
+          vehicleNumber: String(body.vehicleNumber || `AMB-${phone.slice(-4)}`).trim(),
+          driverName: name,
+          driverPhone: phone,
+          location: {
+            lat: Number(body.location?.lat) || 28.6139,
+            lng: Number(body.location?.lng) || 77.209
+          },
+          available: true,
+          userId: user.id
+        });
       }
 
       return sendJson(res, 201, { user: publicUser(user) });
@@ -138,6 +166,11 @@ async function routeApi(req, res) {
     }
 
     if (method === "GET" && url.pathname === "/api/hospitals") {
+      const lat = Number(url.searchParams.get("lat"));
+      const lng = Number(url.searchParams.get("lng"));
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        return sendJson(res, 200, { hospitals: hospitalsForPatient({ lat, lng }) });
+      }
       return sendJson(res, 200, { hospitals: state.hospitals });
     }
 
@@ -176,11 +209,12 @@ async function routeApi(req, res) {
       }
 
       const incidentType = String(body.incidentType || "accident");
+      const hospitalPool = hospitalsForPatient(patientLocation);
       const dispatch = scoreDispatch({
         patientLocation,
         incidentType,
         ambulances: state.ambulances,
-        hospitals: state.hospitals
+        hospitals: hospitalPool
       });
 
       if (dispatch.error) return sendJson(res, 409, { error: dispatch.error });
@@ -198,6 +232,7 @@ async function routeApi(req, res) {
         createdAt: new Date().toISOString(),
         assignedAmbulanceId: assignment.ambulance.id,
         assignedHospitalId: assignment.hospital.id,
+        assignedHospital: assignment.hospital,
         routePlan: {
           etaToPatientMinutes: assignment.etaToPatientMinutes,
           etaToHospitalMinutes: assignment.etaToHospitalMinutes,
@@ -264,12 +299,12 @@ async function routeApi(req, res) {
         notifyPatient(emergency.patientId, "status", {
           emergency: emergencyView(emergency),
           ambulance,
-          hospital: state.hospitals.find((item) => item.id === emergency.assignedHospitalId)
+          hospital: emergency.assignedHospital
         });
         return sendJson(res, 200, {
           emergency: emergencyView(emergency),
           ambulance,
-          hospital: state.hospitals.find((item) => item.id === emergency.assignedHospitalId)
+          hospital: emergency.assignedHospital
         });
       }
 
@@ -277,9 +312,15 @@ async function routeApi(req, res) {
       ambulance.available = true;
       notifyPatient(emergency.patientId, "status", {
         emergency: emergencyView(emergency),
+        ambulance,
+        hospital: emergency.assignedHospital,
         message: "Driver rejected. Please create a new request for redispatch in this prototype."
       });
-      return sendJson(res, 200, { emergency: emergencyView(emergency) });
+      return sendJson(res, 200, {
+        emergency: emergencyView(emergency),
+        ambulance,
+        hospital: emergency.assignedHospital
+      });
     }
 
     if (method === "POST" && url.pathname.match(/^\/api\/emergencies\/[^/]+\/complete$/)) {
@@ -297,8 +338,16 @@ async function routeApi(req, res) {
 
       emergency.status = "completed";
       ambulance.available = true;
-      notifyPatient(emergency.patientId, "status", { emergency: emergencyView(emergency), ambulance });
-      return sendJson(res, 200, { emergency: emergencyView(emergency), ambulance });
+      notifyPatient(emergency.patientId, "status", {
+        emergency: emergencyView(emergency),
+        ambulance,
+        hospital: emergency.assignedHospital
+      });
+      return sendJson(res, 200, {
+        emergency: emergencyView(emergency),
+        ambulance,
+        hospital: emergency.assignedHospital
+      });
     }
 
     if (method === "GET" && url.pathname === "/api/events") {

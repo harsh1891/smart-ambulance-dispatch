@@ -68,6 +68,10 @@
             Password
             <input name="password" type="password" placeholder="Create password" required />
           </label>
+          <label id="vehicleField" class="hidden">
+            Ambulance vehicle number
+            <input name="vehicleNumber" placeholder="MH 12 ER 108" />
+          </label>
           <fieldset id="roleField">
             <legend>Choose account type</legend>
             <label class="choice">
@@ -90,7 +94,6 @@
           <nav class="nav">
             <button class="nav-item active" data-view="patientPanel">Patient</button>
             <button class="nav-item" data-view="driverPanel">Driver</button>
-            <button class="nav-item" data-view="systemPanel">System</button>
           </nav>
           <div class="status-box">
             <span>Live connection</span>
@@ -167,6 +170,7 @@
                   </label>
                 </div>
                 <button id="saveDriverStatus" class="primary" type="button">Update status</button>
+                <button id="useDriverLocationBtn" class="ghost" type="button">Use ambulance GPS</button>
                 <p id="driverMessage" class="message"></p>
               </div>
 
@@ -175,18 +179,9 @@
                 <div id="driverAlert" class="empty-state">No active alert yet. Keep this dashboard open.</div>
               </div>
             </div>
-          </div>
-
-          <div id="systemPanel" class="view-panel hidden">
-            <div class="content-grid">
-              <div class="panel">
+            <div class="panel">
                 <h2>Hospitals</h2>
                 <div id="hospitalList" class="list"></div>
-              </div>
-              <div class="panel">
-                <h2>Ambulances</h2>
-                <div id="ambulanceList" class="list"></div>
-              </div>
             </div>
           </div>
 
