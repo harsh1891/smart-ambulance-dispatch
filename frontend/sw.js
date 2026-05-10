@@ -1,4 +1,4 @@
-const CACHE_NAME = "smart-ambulance-v1";
+const CACHE_NAME = "smart-ambulance-v2";
 const APP_SHELL = ["/", "/styles.css", "/app.js", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -20,6 +20,12 @@ self.addEventListener("fetch", (event) => {
   if (new URL(event.request.url).pathname.startsWith("/api/")) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
