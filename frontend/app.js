@@ -202,11 +202,16 @@ async function renderMapRoute({ emergency, ambulance, hospital }) {
       p.longitude
     ]);
 
-    const line1 = L.polyline(points1, {
-      color: "#2563eb",
-      weight: 6,
-      opacity: 0.9
-    }).addTo(app.map);
+    const shiftedPoints1 = points1.map(([lat, lng]) => [
+  lat + 0.00015,
+  lng + 0.00015
+]);
+
+const line1 = L.polyline(shiftedPoints1, {
+  color: "#2563eb",
+  weight: 6,
+  opacity: 0.9
+}).addTo(app.map);
 
     app.layers.push(line1);
 
@@ -253,11 +258,16 @@ async function renderMapRoute({ emergency, ambulance, hospital }) {
       p.longitude
     ]);
 
-    const line2 = L.polyline(points2, {
-      color: "#16a34a",
-      weight: 6,
-      opacity: 0.9
-    }).addTo(app.map);
+const shiftedPoints2 = points2.map(([lat, lng]) => [
+  lat - 0.00015,
+  lng - 0.00015
+]);
+
+const line2 = L.polyline(shiftedPoints2, {
+  color: "#16a34a",
+  weight: 6,
+  opacity: 0.9
+}).addTo(app.map);
 
     app.layers.push(line2);
 
