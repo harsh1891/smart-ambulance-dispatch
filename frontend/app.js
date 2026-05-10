@@ -1,3 +1,4 @@
+const BASE_URL = "https://smart-ambulance-dispatch.onrender.com";
 const app = {
   user: null,
   sessionName: new URLSearchParams(window.location.search).get("session") || "default",
@@ -32,7 +33,7 @@ async function api(path, options = {}) {
 
   if (app.token) headers.Authorization = `Bearer ${app.token}`;
 
-  const response = await fetch(path, {
+  const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined
@@ -483,7 +484,7 @@ async function loadSystemData() {
 
 function connectEvents() {
   if (app.eventSource) app.eventSource.close();
-  app.eventSource = new EventSource(`/api/events?token=${app.token}`);
+  app.eventSource = new EventSource(`${BASE_URL}/api/events?token=${app.token}`);
 
   app.eventSource.addEventListener("open", () => {
     $("#connectionStatus").textContent = "Online";
