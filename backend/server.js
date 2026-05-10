@@ -78,36 +78,73 @@ function saveState() {
 }
 
 async function hospitalsForPatient(patientLocation) {
+
+  // Get hospitals from OpenStreetMap
   const osmHospitals = await findNearbyHospitals(patientLocation);
-  if (osmHospitals.length) return osmHospitals;
 
-  const nearestSeedDistance = Math.min(
-    ...state.hospitals.map((hospital) => distanceKm(hospital.location, patientLocation))
-  );
+  // If real hospitals found, use ONLY those
+  if (osmHospitals && osmHospitals.length > 0) {
 
-  if (nearestSeedDistance < 50) return state.hospitals;
+    return osmHospitals.map((hospital, index) => ({
+      id: hospital.id || `osm-hospital-${index}`,
+      name: hospital.name || "Nearby Hospital",
+      phone: hospital.phone || "108",
+      location: {
+        lat: Number(hospital.location?.lat),
+        lng: Number(hospital.location?.lng)
+      },
+      specialties:
+        hospital.specialties?.length
+          ? hospital.specialties
+          : [
+              "accident",
+              "bleeding",
+              "fracture",
+              "burn",
+              "heart_attack",
+              "breathing",
+              "stroke"
+            ],
+      source: hospital.source || "OpenStreetMap"
+    }));
+  }
 
+  // Fallback hospitals if OSM fails
   return [
     {
-      id: "near-hosp-1",
-      name: "Nearest Emergency Hospital",
+      id: "fallback-hospital-1",
+      name: "City Emergency Hospital",
       phone: "+91 108",
-      location: { lat: patientLocation.lat + 0.018, lng: patientLocation.lng + 0.012 },
-      specialties: ["accident", "bleeding", "fracture", "burn", "heart_attack", "breathing", "stroke"]
+      location: {
+        lat: patientLocation.lat + 0.015,
+        lng: patientLocation.lng + 0.010
+      },
+      specialties: [
+        "accident",
+        "bleeding",
+        "fracture",
+        "burn",
+        "heart_attack",
+        "breathing",
+        "stroke"
+      ],
+      source: "Fallback"
     },
     {
-      id: "near-hosp-2",
-      name: "City Multispeciality Hospital",
+      id: "fallback-hospital-2",
+      name: "Metro Trauma Center",
       phone: "+91 112",
-      location: { lat: patientLocation.lat - 0.014, lng: patientLocation.lng + 0.02 },
-      specialties: ["heart_attack", "breathing", "stroke", "accident"]
-    },
-    {
-      id: "near-hosp-3",
-      name: "Trauma Care Unit",
-      phone: "+91 102",
-      location: { lat: patientLocation.lat + 0.01, lng: patientLocation.lng - 0.022 },
-      specialties: ["accident", "bleeding", "fracture", "burn"]
+      location: {
+        lat: patientLocation.lat - 0.012,
+        lng: patientLocation.lng + 0.018
+      },
+      specialties: [
+        "accident",
+        "bleeding",
+        "fracture",
+        "burn"
+      ],
+      source: "Fallback"
     }
   ];
 }
