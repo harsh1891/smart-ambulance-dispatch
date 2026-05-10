@@ -86,24 +86,59 @@ function marker(latLng, label, color) {
 }
 
 async function drawRoute(points, color) {
-  const coordinates = points.map((point) => `${point.lng},${point.lat}`).join(";");
-  const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
-    const route = data.routes?.[0]?.geometry?.coordinates;
-    if (!route) throw new Error("No route");
-    const latLngs = route.map(([lng, lat]) => [lat, lng]);
-    const line = L.polyline(latLngs, { color, weight: 5, opacity: 0.82 }).addTo(app.map);
+
+    const response = await api("/api/route", {
+      method: "POST",
+      body: {
+        driverLat: points[0].lat,
+        driverLng: points[0].lng,
+
+        patientLat: points[1].lat,
+        patientLng: points[1].lng,
+
+        hospitalLat: points[2]
+          ? points[2].lat
+          : points[1].lat,
+
+        hospitalLng: points[2]
+          ? points[2].lng
+          : points[1].lng
+      }
+    });
+
+    const latLngs = response.route.map((point) => [
+      point.latitude,
+      point.longitude
+    ]);
+
+    const line = L.polyline(latLngs, {
+      color,
+      weight: 5,
+      opacity: 0.85
+    }).addTo(app.map);
+
     app.layers.push(line);
+
     return line;
-  } catch {
+
+  } catch (error) {
+
+    console.error(error);
+
     const line = L.polyline(
       points.map((point) => [point.lat, point.lng]),
-      { color, weight: 5, opacity: 0.65, dashArray: "8 8" }
+      {
+        color,
+        weight: 5,
+        opacity: 0.6,
+        dashArray: "8 8"
+      }
     ).addTo(app.map);
+
     app.layers.push(line);
+
     return line;
   }
 }
@@ -121,8 +156,14 @@ async function renderMapRoute({ emergency, ambulance, hospital }) {
   marker(ambulance.location, `${ambulance.vehicleNumber} - ${ambulance.driverName}`, "#2563eb");
   marker(hospital.location, hospital.name, "#0f766e");
 
-  await drawRoute([ambulance.location, patient], "#2563eb");
-  await drawRoute([patient, hospital.location], "#0f766e");
+await drawRoute(
+  [
+    ambulance.location,
+    patient,
+    hospital.location
+  ],
+  "#2563eb"
+);
 
   const bounds = L.latLngBounds([
     [patient.lat, patient.lng],
