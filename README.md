@@ -31,6 +31,35 @@ Open:
 http://localhost:4173
 ```
 
+## How To Demo Patient + Driver
+
+Use two separate demo sessions. They behave like two different phones because each URL keeps its own login.
+
+Driver tab:
+
+```text
+http://localhost:4180/?session=driver
+```
+
+Patient tab:
+
+```text
+http://localhost:4180/?session=patient
+```
+
+Recommended flow:
+
+1. Open the driver tab and sign up as **Ambulance Driver**.
+2. Click **Use ambulance GPS** and allow browser location permission.
+3. Click **Update status**.
+4. Open the patient tab and sign up as **Patient / normal user**.
+5. Click **Use my location** and allow location permission.
+6. Select incident type and click **Send emergency**.
+7. Go back to the driver tab, accept the alert.
+8. Patient tab will then show the assigned ambulance driver details.
+
+If the map looks broken after code changes, press `Ctrl + Shift + R` once to hard refresh the browser.
+
 ## Demo Accounts
 
 Create two accounts from the sign-up screen:

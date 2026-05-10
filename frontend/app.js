@@ -1,6 +1,7 @@
 const app = {
   user: null,
-  token: localStorage.getItem("sad_token"),
+  sessionName: new URLSearchParams(window.location.search).get("session") || "default",
+  token: null,
   eventSource: null,
   map: null,
   layers: [],
@@ -8,6 +9,9 @@ const app = {
   activeHospital: null,
   activeAmbulance: null
 };
+
+app.storageKey = `sad_token_${app.sessionName}`;
+app.token = localStorage.getItem(app.storageKey);
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -39,11 +43,24 @@ async function api(path, options = {}) {
 
 function initMap() {
   if (app.map || !window.L) return;
-  app.map = L.map("map").setView([28.6139, 77.209], 13);
+  app.map = L.map("map", {
+    zoomControl: true,
+    preferCanvas: true
+  }).setView([28.6139, 77.209], 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(app.map);
+  refreshMapLayout();
+}
+
+function refreshMapLayout() {
+  if (!app.map) return;
+  requestAnimationFrame(() => {
+    app.map.invalidateSize(true);
+    setTimeout(() => app.map?.invalidateSize(true), 150);
+    setTimeout(() => app.map?.invalidateSize(true), 500);
+  });
 }
 
 function clearMap() {
@@ -107,6 +124,7 @@ async function renderMapRoute({ emergency, ambulance, hospital }) {
     [hospital.location.lat, hospital.location.lng]
   ]);
   app.map.fitBounds(bounds.pad(0.25));
+  refreshMapLayout();
 
   $("#routeSummary").textContent =
     `${emergency.routePlan.etaToPatientMinutes} min to patient, ` +
@@ -144,7 +162,7 @@ function showDashboard() {
   }
 
   initMap();
-  setTimeout(() => app.map?.invalidateSize(), 120);
+  refreshMapLayout();
 }
 
 function renderFirstAid(firstAid) {
@@ -303,7 +321,7 @@ async function restoreSession() {
       $("#driverLng").value = payload.ambulance.location.lng;
     }
   } catch {
-    localStorage.removeItem("sad_token");
+    localStorage.removeItem(app.storageKey);
     app.token = null;
     showAuth();
   }
@@ -349,7 +367,7 @@ function setupAuth() {
       });
       app.user = payload.user;
       app.token = payload.user.token;
-      localStorage.setItem("sad_token", app.token);
+      localStorage.setItem(app.storageKey, app.token);
       showDashboard();
       connectEvents();
       loadSystemData();
@@ -368,6 +386,7 @@ function setupDashboard() {
       $$(".view-panel").forEach((panel) => panel.classList.add("hidden"));
       $(`#${button.dataset.view}`).classList.remove("hidden");
       setTimeout(() => app.map?.invalidateSize(), 80);
+      refreshMapLayout();
     });
   });
 
@@ -375,7 +394,7 @@ function setupDashboard() {
     app.eventSource?.close();
     app.user = null;
     app.token = null;
-    localStorage.removeItem("sad_token");
+    localStorage.removeItem(app.storageKey);
     showAuth();
   });
 
@@ -396,6 +415,7 @@ function setupDashboard() {
             "Your current emergency location",
             "#b42318"
           );
+          refreshMapLayout();
         }
         setMessage("#patientMessage", "Location filled from browser GPS.", "success");
       },
@@ -420,6 +440,7 @@ function setupDashboard() {
             "Your ambulance location",
             "#2563eb"
           );
+          refreshMapLayout();
         }
         setMessage("#driverMessage", "Ambulance GPS location filled. Click Update status.", "success");
         loadSystemData();
@@ -498,5 +519,12 @@ function setupDashboard() {
 document.addEventListener("DOMContentLoaded", () => {
   setupAuth();
   setupDashboard();
+  if (app.sessionName === "driver") {
+    $('[name="role"][value="driver"]').checked = true;
+    $("#vehicleField").classList.remove("hidden");
+  }
+  if (app.sessionName === "patient") {
+    $('[name="role"][value="patient"]').checked = true;
+  }
   restoreSession();
 });
